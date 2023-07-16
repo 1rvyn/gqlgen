@@ -101,12 +101,19 @@ func (s *Server) getTransport(r *http.Request) graphql.Transport {
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		if err := recover(); err != nil {
-			err := s.exec.PresentRecoveredError(r.Context(), err)
-			gqlErr, _ := err.(*gqlerror.Error)
-			resp := &graphql.Response{Errors: []*gqlerror.Error{gqlErr}}
-			b, _ := json.Marshal(resp)
-			w.WriteHeader(http.StatusUnprocessableEntity)
-			w.Write(b)
+			switch e := err.(type) {
+			case error:
+				gqlErr, ok := e.(*gqlerror.Error)
+				if !ok {
+					// handle the case where err is not *gqlerror.Error
+				}
+				resp := &graphql.Response{Errors: []*gqlerror.Error{gqlErr}}
+				b, _ := json.Marshal(resp)
+				w.WriteHeader(http.StatusUnprocessableEntity)
+				w.Write(b)
+			default:
+				// handle the case where err is not an error
+			}
 		}
 	}()
 
